@@ -16,7 +16,7 @@ def ode_fun(tau, z):
         dz: the state derivative vector. Returns a numpy array.
     """
     ########## Code starts here ##########
-    
+
     ########## Code ends here ##########
     return dz
 
@@ -40,7 +40,7 @@ def bc_fun(za, zb):
     x0 = [0, 0, -np.pi/2.0]
 
     ########## Code starts here ##########
-    
+
     ########## Code ends here ##########
     return (bca, bcb)
 
@@ -79,7 +79,7 @@ def compute_controls(z):
         om: angular rate control input
     """
     ########## Code starts here ##########
-    
+
     ########## Code ends here ##########
 
     return V, om
@@ -95,7 +95,7 @@ def main():
     Hint: The total time is between 15-25
     """
     ########## Code starts here ##########
-    
+
     ########## Code ends here ##########
 
     problem_inputs = {
@@ -128,7 +128,7 @@ if __name__ == '__main__':
     plt.subplot(1, 2, 1)
     plt.plot(x, y,'k-',linewidth=2)
     plt.quiver(x[1:-1:200], y[1:-1:200],np.cos(th[1:-1:200]),np.sin(th[1:-1:200]))
-    plt.grid('on')
+    plt.grid(True)
     plt.plot(0,0,'go',markerfacecolor='green',markersize=15)
     plt.plot(5,5,'ro',markerfacecolor='red', markersize=15)
     plt.xlabel('X [m]')
@@ -139,7 +139,7 @@ if __name__ == '__main__':
     plt.subplot(1, 2, 2)
     plt.plot(t, V,linewidth=2)
     plt.plot(t, om,linewidth=2)
-    plt.grid('on')
+    plt.grid(True)
     plt.xlabel('Time [s]')
     plt.legend(['V [m/s]', '$\omega$ [rad/s]'], loc='best')
     plt.title('Optimal control sequence')
