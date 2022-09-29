@@ -1,9 +1,12 @@
-import numpy as np
-import pickle
 import os
-from scipy.integrate import odeint
+import typing as T
 
-def car_dyn(x, t, ctrl, noise):
+import numpy as np
+from scipy.integrate import odeint  # type: ignore
+from six.moves import cPickle as pickle #for performance
+
+
+def car_dyn(x: np.ndarray, t: float, ctrl: np.ndarray, noise: np.ndarray) -> T.List[float]:
     u_0 = ctrl[0] + noise[0]
     u_1 = ctrl[1] + noise[1]
     dxdt = [u_0 * np.cos(x[2]),
@@ -11,7 +14,15 @@ def car_dyn(x, t, ctrl, noise):
             u_1]
     return dxdt
 
-def simulate_car_dyn(x_0, y_0, th_0, times, controller=None, actions=None, noise_scale=0):
+def simulate_car_dyn(
+    x_0: float,
+    y_0: float,
+    th_0: float,
+    times: T.List[float],
+    controller: T.Optional[T.Any] = None,
+    actions: T.Optional[np.ndarray] = None,
+    noise_scale: float = 0.
+) -> T.Tuple[np.ndarray, np.ndarray]:
     """
     inputs: x_0,y_0,th_0 (floats) initial state
             times (list len N) sequence of times at which to apply control
@@ -48,7 +59,7 @@ def simulate_car_dyn(x_0, y_0, th_0, times, controller=None, actions=None, noise
         # compute control
         if feedback:
             V, om = controller.compute_control(x[0], x[1], x[2], t)
-        else:
+        elif actions is not None:
             V = actions[i,0]
             om = actions[i,1]
 
@@ -65,26 +76,15 @@ def simulate_car_dyn(x_0, y_0, th_0, times, controller=None, actions=None, noise
     return states, ctrl
 
 
-def wrapToPi(a):
+def wrapToPi(a: T.Union[T.List[float], np.ndarray]) -> T.Union[T.List[float], np.ndarray]:
     if isinstance(a, list):    # backwards compatibility for lists (distinct from np.array)
         return [(x + np.pi) % (2*np.pi) - np.pi for x in a]
     return (a + np.pi) % (2*np.pi) - np.pi
 
-def check_flip(z0):
-    flip = 0
-    if z0[-1] < 0:
-        tf = -z0[-1]
-        flip = 1
-    else:
-        tf = z0[-1]
-    return flip, tf
-
-from six.moves import cPickle as pickle #for performance
-
-def get_folder_name(filename):
+def get_folder_name(filename: str) -> str:
     return '/'.join(filename.split('/')[:-1])
 
-def maybe_makedirs(path_to_create):
+def maybe_makedirs(path_to_create: str) -> None:
     """This function will create a directory, unless it exists already,
     at which point the function will return.
     The exception handling is necessary as it prevents a race condition
@@ -98,12 +98,12 @@ def maybe_makedirs(path_to_create):
         if not os.path.isdir(path_to_create):
             raise
 
-def save_dict(di_, filename_):
+def save_dict(di_: T.Dict[str, T.Any], filename_: str) -> None:
     maybe_makedirs(get_folder_name(filename_))
     with open(filename_, 'wb') as f:
         pickle.dump(di_, f)
 
-def load_dict(filename_):
+def load_dict(filename_: str) -> T.Dict[str, T.Any]:
     with open(filename_, 'rb') as f:
         ret_di = pickle.load(f)
     return ret_di
