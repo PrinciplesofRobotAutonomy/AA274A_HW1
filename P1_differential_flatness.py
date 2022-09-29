@@ -109,7 +109,7 @@ def rescale_V(V: np.ndarray, om: np.ndarray, V_max: float, om_max: float) -> np.
     satisfied.
     Hint: This should only take one or two lines.
     Hint: If you run into division-by-zero runtime warnings, try adding a small
-          epsilon to the denomenator
+          epsilon (e.g. 1e-6) to the denomenator
     """
     ########## Code starts here ##########
 
