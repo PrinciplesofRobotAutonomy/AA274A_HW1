@@ -1,27 +1,30 @@
-import numpy as np
 import math
+import typing as T
+
+import numpy as np
 from numpy import linalg
-from scipy.integrate import cumtrapz
-import matplotlib.pyplot as plt
-from utils import *
+from scipy.integrate import cumtrapz  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
+
+from utils import save_dict, maybe_makedirs
 
 class State:
-    def __init__(self,x,y,V,th):
+    def __init__(self, x: float, y: float, V: float, th: float) -> None:
         self.x = x
         self.y = y
         self.V = V
         self.th = th
 
     @property
-    def xd(self):
+    def xd(self) -> float:
         return self.V*np.cos(self.th)
 
     @property
-    def yd(self):
+    def yd(self) -> float:
         return self.V*np.sin(self.th)
 
 
-def compute_traj_coeffs(initial_state, final_state, tf):
+def compute_traj_coeffs(initial_state: State, final_state: State, tf: float) -> np.ndarray:
     """
     Inputs:
         initial_state (State)
@@ -37,25 +40,26 @@ def compute_traj_coeffs(initial_state, final_state, tf):
     ########## Code ends here ##########
     return coeffs
 
-def compute_traj(coeffs, tf, N):
+def compute_traj(coeffs: np.ndarray, tf: float, N: int) -> T.Tuple[np.ndarray, np.ndarray]:
     """
     Inputs:
         coeffs (np.array shape [8]), coefficients on the basis functions
         tf (float) final_time
         N (int) number of points
     Output:
+        t (np.array shape [N]) evenly spaced time points from 0 to tf
         traj (np.array shape [N,7]), N points along the trajectory, from t=0
             to t=tf, evenly spaced in time
     """
-    t = np.linspace(0,tf,N) # generate evenly spaced points from 0 to tf
-    traj = np.zeros((N,7))
+    t = np.linspace(0, tf, N) # generate evenly spaced points from 0 to tf
+    traj = np.zeros((N, 7))
     ########## Code starts here ##########
 
     ########## Code ends here ##########
 
     return t, traj
 
-def compute_controls(traj):
+def compute_controls(traj: np.ndarray) -> T.Tuple[np.ndarray, np.ndarray]:
     """
     Input:
         traj (np.array shape [N,7])
@@ -69,7 +73,7 @@ def compute_controls(traj):
 
     return V, om
 
-def compute_arc_length(V, t):
+def compute_arc_length(V: np.ndarray, t: np.ndarray) -> np.ndarray:
     """
     This function computes arc-length s as a function of t.
     Inputs:
@@ -87,7 +91,7 @@ def compute_arc_length(V, t):
     ########## Code ends here ##########
     return s
 
-def rescale_V(V, om, V_max, om_max):
+def rescale_V(V: np.ndarray, om: np.ndarray, V_max: float, om_max: float) -> np.ndarray:
     """
     This function computes V_tilde, given the unconstrained solution V, and om.
     Inputs:
@@ -95,6 +99,8 @@ def rescale_V(V, om, V_max, om_max):
             differential flatness problem.
         om: vector of angular velocities of length T. Solution from the
             unconstrained, differential flatness problem.
+        V_max: maximum absolute linear velocity
+        om_max: maximum absolute angular velocity
     Output:
         V_tilde: Rescaled velocity that satisfies the control constraints.
 
@@ -102,6 +108,8 @@ def rescale_V(V, om, V_max, om_max):
     original value V, and values required to ensure _both_ constraints are
     satisfied.
     Hint: This should only take one or two lines.
+    Hint: If you run into division-by-zero runtime warnings, try adding a small
+          epsilon to the denomenator
     """
     ########## Code starts here ##########
 
@@ -109,7 +117,7 @@ def rescale_V(V, om, V_max, om_max):
     return V_tilde
 
 
-def compute_tau(V_tilde, s):
+def compute_tau(V_tilde: np.ndarray, s: np.ndarray) -> np.ndarray:
     """
     This function computes the new time history tau as a function of s.
     Inputs:
@@ -125,7 +133,7 @@ def compute_tau(V_tilde, s):
     ########## Code ends here ##########
     return tau
 
-def rescale_om(V, om, V_tilde):
+def rescale_om(V: np.ndarray, om: np.ndarray, V_tilde: np.ndarray) -> np.ndarray:
     """
     This function computes the rescaled om control.
     Inputs:
@@ -142,7 +150,14 @@ def rescale_om(V, om, V_tilde):
     ########## Code ends here ##########
     return om_tilde
 
-def compute_traj_with_limits(z_0, z_f, tf, N, V_max, om_max):
+def compute_traj_with_limits(
+    z_0: State,
+    z_f: State,
+    tf: float,
+    N: int,
+    V_max: float,
+    om_max: float
+) -> T.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     coeffs = compute_traj_coeffs(initial_state=z_0, final_state=z_f, tf=tf)
     t, traj = compute_traj(coeffs=coeffs, tf=tf, N=N)
     V,om = compute_controls(traj=traj)
@@ -153,7 +168,14 @@ def compute_traj_with_limits(z_0, z_f, tf, N, V_max, om_max):
 
     return traj, tau, V_tilde, om_tilde
 
-def interpolate_traj(traj, tau, V_tilde, om_tilde, dt, s_f):
+def interpolate_traj(
+    traj: np.ndarray,
+    tau: np.ndarray,
+    V_tilde: np.ndarray,
+    om_tilde: np.ndarray,
+    dt: float,
+    s_f: State
+) -> T.Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Inputs:
         traj (np.array [N,7]) original unscaled trajectory
@@ -161,6 +183,7 @@ def interpolate_traj(traj, tau, V_tilde, om_tilde, dt, s_f):
         V_tilde (np.array [N]) new velocities to use
         om_tilde (np.array [N]) new rotational velocities to use
         dt (float) timestep for interpolation
+        s_f (State) final state
 
     Outputs:
         t_new (np.array [N_new]) new timepoints spaced dt apart
@@ -193,7 +216,6 @@ def interpolate_traj(traj, tau, V_tilde, om_tilde, dt, s_f):
     return t_new, V_scaled, om_scaled, traj_scaled
 
 if __name__ == "__main__":
-    # traj, V, om = differential_flatness_trajectory()
     # Constants
     tf = 15.
     V_max = 0.5

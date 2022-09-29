@@ -1,21 +1,23 @@
+import typing as T
+
 import numpy as np
-import matplotlib.pyplot as plt
-from scipy.optimize import minimize, Bounds
-from utils import *
+import matplotlib.pyplot as plt  # type: ignore
+from scipy.optimize import minimize, Bounds  # type: ignore
+from utils import save_dict, maybe_makedirs
 
-N = 20  # Number of time discretization nodes (0, 1, ... N).
-s_dim = 3  # State dimension; 3 for (x, y, th).
-u_dim = 2  # Control dimension; 2 for (V, om).
-v_max = 0.5  # Maximum linear velocity.
-om_max = 1.0  # Maximum angular velocity.
+N = 20
+s_dim = 3
+u_dim = 2
+v_max = 0.5
+om_max = 1.0
 
-s_0 = np.array([0, 0, -np.pi / 2])  # Initial state.
-s_f = np.array([5, 5, -np.pi / 2])  # Final state.
+s_0 = np.array([0, 0, -np.pi / 2])
+s_f = np.array([5, 5, -np.pi / 2])
 
 
-def pack_decision_variables(t_f, s, u):
+def pack_decision_variables(t_f: float, s: np.ndarray, u: np.ndarray) -> np.ndarray:
     """Packs decision variables (final time, states, controls) into a 1D vector.
-    
+
     Args:
         t_f: Final time, a scalar.
         s: States, an array of shape (N + 1, s_dim).
@@ -27,9 +29,9 @@ def pack_decision_variables(t_f, s, u):
     return np.concatenate([[t_f], s.ravel(), u.ravel()])
 
 
-def unpack_decision_variables(z):
+def unpack_decision_variables(z: np.ndarray) -> T.Tuple[float, np.ndarray, np.ndarray]:
     """Unpacks a 1D vector into decision variables (final time, states, controls).
-    
+
     Args:
         z: An array of shape (1 + (N + 1) * s_dim + N * u_dim,).
 
@@ -38,22 +40,25 @@ def unpack_decision_variables(z):
         s: States, an array of shape (N + 1, s_dim).
         u: Controls, an array of shape (N, u_dim).
     """
-    t_f = z[0]
+    t_f = float(z[0])
     s = z[1:1 + (N + 1) * s_dim].reshape(N + 1, s_dim)
     u = z[-N * u_dim:].reshape(N, u_dim)
     return t_f, s, u
 
 
-def optimize_trajectory(time_weight=1.0, verbose=True):
+def optimize_trajectory(
+    time_weight: float = 1.0,
+    verbose: bool = True
+) -> T.Tuple[float, np.ndarray, np.ndarray]:
     """Computes the optimal trajectory as a function of `time_weight`.
-    
+
     Args:
         time_weight: \lambda in the HW writeup.
 
     Returns:
-        t_f_opt: Optimal final time, a scalar.
-        s_opt: Optimal states, an array of shape (N + 1, s_dim).
-        u_opt: Optimal controls, an array of shape (N, u_dim).
+        t_f_opt: Final time, a scalar.
+        s_opt: States, an array of shape (N + 1, s_dim).
+        u_opt: Controls, an array of shape (N, u_dim).
     """
 
     # NOTE: When using `minimize`, you may find the utilities
