@@ -13,4 +13,4 @@ To create a zip file for your code submission, run
 ```bash
 bash make_submission.sh
 ```
-and submit `hw1.zip` genereated in the root of this repo.
+and submit `hw1.zip` generated in the root of this repo.
